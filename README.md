@@ -1,5 +1,5 @@
-# Elevate Growth Dashboard
+# Elevate Studio Dashboard
 
-Dashboard maestro de ventas, continuidad, vencimientos y crecimiento para Elevate Studio.
+Tablero de control maestro de ventas, continuidad, vencimientos y crecimiento para Elevate Studio.
 
 Publicado como sitio estatico de GitHub Pages.
