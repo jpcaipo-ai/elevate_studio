@@ -279595,7 +279595,7 @@ function renderExecutiveSummary() {
       cls: "base",
       eyebrow: "Base activa monetizada",
       title: currency.format(activeValue.monthlyValue),
-      body: `${activeCustomers} clientes activos unicos. Mensuales: ${activePlans.monthly.customers} (${currency.format(activePlans.monthly.monthlyValue)}). Trimestrales/largos: ${activePlans.quarterly.customers} (${currency.format(activePlans.quarterly.monthlyValue)}). Bolsas: ${activePlans.other.customers} (${currency.format(activePlans.other.monthlyValue)}).`,
+      body: `${activeCustomers} clientes activos unicos. Ticket activo prom.: ${currency.format(activeValue.avgTicket)}. Valor mensual prom.: ${currency.format(activeValue.avgMonthlyValue)}.`,
       meter: membershipByProgram().slice(0, 4).map((row, index) => [row.label, row.value, ["renewal", "new", "repurchase", "reactivation"][index] || "new"]),
     },
   ];
@@ -279671,6 +279671,7 @@ function renderKpis() {
   const activeCrmIds = new Set(state.customers.map((c) => c.customerId));
   const selectedBuyerIds = unique(rows.map((r) => r.customerId));
   const membership = membershipMetrics();
+  const activeValue = activeDatabaseValue();
   const oneDay = oneDayMetrics(rows);
   const salesSplit = salesSplitMetrics(rows);
   const lifecycle = lifecycleMetrics(rows);
@@ -279696,6 +279697,7 @@ function renderKpis() {
     { label: "Nuevos compra", value: numberFmt.format(newPaid), delta: "Primera compra pagada en periodo", drill: "newPurchase", cls: "clickable" },
     { label: "Nuevos CRM", value: numberFmt.format(newCrm), delta: "Date Added en periodo", drill: "newCrm", cls: "clickable" },
     { label: "Activos únicos", value: numberFmt.format(membership.customers), delta: `${membership.activePasses} pases active + ${membership.pendingPasses} pending`, drill: "membership", cls: "good clickable" },
+    { label: "Ticket activo prom.", value: currency.format(activeValue.avgTicket), delta: `${currency.format(activeValue.avgMonthlyValue)} mensualizado por cliente activo`, drill: "membership", cls: "good clickable" },
     { label: "1D / 1 clase", value: numberFmt.format(oneDay.purchases), delta: `${oneDay.onlyCustomers} clientes quedaron solo 1D`, drill: "oneDay", cls: oneDay.onlyCustomers ? "bad clickable" : "clickable" },
   ];
 
@@ -279870,6 +279872,12 @@ function renderGrowthRadar() {
       title: "Valor BBDD activa / mes",
       value: currency.format(activeValue.monthlyValue),
       sub: `${activeValue.customers} clientes activos monetizados`,
+      tone: "good",
+    },
+    {
+      title: "Ticket activo prom.",
+      value: currency.format(activeValue.avgTicket),
+      sub: `${currency.format(activeValue.avgMonthlyValue)} mensualizado por cliente activo`,
       tone: "good",
     },
     {
@@ -280621,10 +280629,16 @@ function continuityMetricsForCurrentRange() {
 
 function activeDatabaseValue() {
   const rows = state.rows.filter((r) => r.isPaid && (r.status === "active" || r.status === "pending"));
+  const customers = unique(rows.map((r) => r.customerId)).length;
+  const revenue = sum(rows, (r) => r.price);
+  const monthlyValue = sum(rows, (r) => monthlyizedValue(r));
   return {
-    customers: unique(rows.map((r) => r.customerId)).length,
+    customers,
     passes: rows.length,
-    monthlyValue: sum(rows, (r) => monthlyizedValue(r)),
+    revenue,
+    monthlyValue,
+    avgTicket: customers ? revenue / customers : 0,
+    avgMonthlyValue: customers ? monthlyValue / customers : 0,
   };
 }
 
