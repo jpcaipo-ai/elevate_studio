@@ -269,6 +269,14 @@ h2 {
   margin-bottom: 10px;
 }
 
+.top-action-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.75fr);
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 10px;
+}
+
 .june-summary {
   display: grid;
   grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
@@ -611,6 +619,14 @@ h2 {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 242, 232, 0.92));
 }
 
+.top-action-grid .lifecycle-panel {
+  margin-bottom: 0;
+  min-height: 100%;
+  background:
+    linear-gradient(135deg, rgba(19, 128, 126, 0.12), rgba(213, 162, 58, 0.12)),
+    rgba(255, 255, 255, 0.94);
+}
+
 .life-head {
   display: flex;
   justify-content: space-between;
@@ -698,6 +714,127 @@ h2 {
   color: rgba(255, 255, 255, 0.86);
   font-size: 12px;
   line-height: 1.3;
+}
+
+.yoy-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100%;
+}
+
+.yoy-hero {
+  padding: 14px;
+  border-radius: 8px;
+  color: #fffaf1;
+  background:
+    linear-gradient(135deg, rgba(19, 128, 126, 0.96), rgba(15, 77, 77, 0.94));
+}
+
+.yoy-hero.bad {
+  background:
+    linear-gradient(135deg, rgba(169, 61, 52, 0.97), rgba(216, 90, 62, 0.9));
+}
+
+.yoy-hero span,
+.yoy-grid span,
+.yoy-row span {
+  display: block;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.yoy-hero span {
+  color: rgba(255, 250, 241, 0.74);
+}
+
+.yoy-hero strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.yoy-hero p {
+  margin-top: 8px;
+  color: rgba(255, 250, 241, 0.82);
+}
+
+.yoy-bars {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.yoy-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.yoy-row span,
+.yoy-grid span {
+  color: var(--muted);
+}
+
+.yoy-row strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 17px;
+}
+
+.yoy-row i {
+  display: block;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6dfd1;
+}
+
+.yoy-row b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.yoy-row.now b {
+  background: linear-gradient(90deg, var(--teal), var(--gold));
+}
+
+.yoy-row.past b {
+  background: linear-gradient(90deg, var(--coral), var(--gold));
+}
+
+.yoy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.yoy-grid div {
+  padding: 10px;
+  border: 1px solid rgba(39, 48, 50, 0.1);
+  border-radius: 8px;
+  background: #fffaf1;
+}
+
+.yoy-grid strong,
+.yoy-grid small {
+  display: block;
+}
+
+.yoy-grid strong {
+  margin-top: 5px;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.yoy-grid small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .matrix {
@@ -1642,7 +1779,8 @@ tr:hover td {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .executive-grid {
+  .executive-grid,
+  .top-action-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1721,6 +1859,7 @@ tr:hover td {
   .radar-grid,
   .life-grid,
   .executive-grid,
+  .top-action-grid,
   .june-pills {
     grid-template-columns: 1fr;
   }
@@ -1827,6 +1966,20 @@ tr:hover td {
         <section class="panel goal-panel" id="goalForecast"></section>
 
         <section class="executive-grid" id="executiveSummary"></section>
+
+        <section class="top-action-grid">
+          <section class="lifecycle-panel" id="lifecyclePanel"></section>
+
+          <section class="panel yoy-panel">
+            <div class="panel-head">
+              <div>
+                <h3>Mes vs año anterior</h3>
+                <p>Mismo periodo comparable contra el año pasado</p>
+              </div>
+            </div>
+            <div id="yearComparisonWidget"></div>
+          </section>
+        </section>
 
         <section class="kpi-grid" id="kpiGrid"></section>
 
@@ -1939,8 +2092,6 @@ tr:hover td {
           </div>
           <div id="attendanceInsights"></div>
         </section>
-
-        <section class="lifecycle-panel" id="lifecyclePanel"></section>
 
         <section class="matrix">
           <article class="panel wide">
@@ -279129,6 +279280,7 @@ const els = {
   juneSummary: document.querySelector("#juneSummaryPanel"),
   goalForecast: document.querySelector("#goalForecast"),
   executiveSummary: document.querySelector("#executiveSummary"),
+  yearComparison: document.querySelector("#yearComparisonWidget"),
   kpis: document.querySelector("#kpiGrid"),
   weeklyChart: document.querySelector("#weeklyChart"),
   weeklyTotal: document.querySelector("#weeklyTotal"),
@@ -279306,6 +279458,7 @@ function render() {
   renderGoalForecast();
   renderJuneSummary();
   renderExecutiveSummary();
+  renderYearComparisonWidget();
   renderKpis();
   renderWeeklyChart();
   renderMonthlyComparison();
@@ -279390,6 +279543,10 @@ function renderGoalForecast() {
 function getFilteredRows() {
   const from = new Date(`${els.from.value}T00:00:00`);
   const to = new Date(`${els.to.value}T23:59:59`);
+  return rowsForRangeWithCurrentFilters(from, to);
+}
+
+function rowsForRangeWithCurrentFilters(from, to) {
   return state.rows.filter((r) => {
     if (els.paidOnly.checked && !r.isPaid) return false;
     if (r.date < from || r.date > to) return false;
@@ -279457,6 +279614,54 @@ function renderExecutiveSummary() {
       </article>
     `;
   }).join("");
+}
+
+function renderYearComparisonWidget() {
+  if (!els.yearComparison) return;
+  const selected = selectedRangeInfo();
+  const currentRows = state.filtered;
+  const currentRevenue = sum(currentRows, (r) => r.price);
+  const currentCustomers = unique(currentRows.map((r) => r.customerId)).length;
+  const lastYearFrom = new Date(selected.from);
+  lastYearFrom.setFullYear(lastYearFrom.getFullYear() - 1);
+  const lastYearTo = new Date(selected.to);
+  lastYearTo.setFullYear(lastYearTo.getFullYear() - 1);
+  if (monthKey(reportDate) === monthKey(selected.from) && selected.to >= reportDate) {
+    lastYearTo.setMonth(reportDate.getMonth());
+    lastYearTo.setDate(reportDate.getDate());
+    lastYearTo.setFullYear(reportDate.getFullYear() - 1);
+    lastYearTo.setHours(23, 59, 59, 999);
+  }
+  const lastYearRows = rowsForRangeWithCurrentFilters(lastYearFrom, lastYearTo);
+  const lastYearRevenue = sum(lastYearRows, (r) => r.price);
+  const lastYearCustomers = unique(lastYearRows.map((r) => r.customerId)).length;
+  const delta = lastYearRevenue ? ((currentRevenue - lastYearRevenue) / lastYearRevenue) * 100 : 0;
+  const gap = currentRevenue - lastYearRevenue;
+  const currentTicket = currentRows.length ? currentRevenue / currentRows.length : 0;
+  const pastTicket = lastYearRows.length ? lastYearRevenue / lastYearRows.length : 0;
+  const max = Math.max(1, currentRevenue, lastYearRevenue);
+  els.yearComparison.innerHTML = `
+    <div class="yoy-hero ${gap >= 0 ? "good" : "bad"}">
+      <span>${readableMonth(selected.month)} vs ${readableMonth(monthKey(lastYearFrom))}</span>
+      <strong>${delta >= 0 ? "+" : ""}${pctFmt.format(delta)}%</strong>
+      <p>${gap >= 0 ? "Arriba" : "Abajo"} por ${currency.format(Math.abs(gap))}</p>
+    </div>
+    <div class="yoy-bars">
+      <div class="yoy-row now">
+        <div><span>Actual</span><strong>${currency.format(currentRevenue)}</strong></div>
+        <i><b style="width:${(currentRevenue / max) * 100}%"></b></i>
+      </div>
+      <div class="yoy-row past">
+        <div><span>Año anterior</span><strong>${currency.format(lastYearRevenue)}</strong></div>
+        <i><b style="width:${(lastYearRevenue / max) * 100}%"></b></i>
+      </div>
+    </div>
+    <div class="yoy-grid">
+      <div><span>Compras</span><strong>${numberFmt.format(currentRows.length)}</strong><small>vs ${numberFmt.format(lastYearRows.length)}</small></div>
+      <div><span>Clientes</span><strong>${numberFmt.format(currentCustomers)}</strong><small>vs ${numberFmt.format(lastYearCustomers)}</small></div>
+      <div><span>Ticket</span><strong>${currency.format(currentTicket)}</strong><small>vs ${currency.format(pastTicket)}</small></div>
+    </div>
+  `;
 }
 
 function renderKpis() {
