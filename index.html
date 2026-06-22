@@ -837,6 +837,115 @@ h2 {
   font-size: 11px;
 }
 
+.new-evolution-panel {
+  margin-bottom: 10px;
+  background:
+    linear-gradient(135deg, rgba(19, 128, 126, 0.06), rgba(213, 162, 58, 0.08)),
+    rgba(255, 255, 255, 0.94);
+}
+
+.new-evolution-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.new-evolution-summary div {
+  padding: 12px;
+  border: 1px solid rgba(39, 48, 50, 0.1);
+  border-radius: 8px;
+  background: #fffaf1;
+}
+
+.new-evolution-summary span,
+.new-month-head span,
+.new-month-metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.new-evolution-summary strong {
+  display: block;
+  margin-top: 6px;
+  font-size: clamp(22px, 2.1vw, 31px);
+  line-height: 1;
+}
+
+.new-evolution-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.new-month-card {
+  display: grid;
+  gap: 10px;
+  min-height: 184px;
+  padding: 13px;
+  border: 1px solid rgba(39, 48, 50, 0.1);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 241, 0.9));
+  box-shadow: var(--shadow-soft);
+}
+
+.new-month-card.projection {
+  border-color: rgba(213, 162, 58, 0.34);
+}
+
+.new-month-head {
+  display: grid;
+  gap: 6px;
+}
+
+.new-month-head strong {
+  font-size: clamp(23px, 2vw, 31px);
+  line-height: 0.95;
+}
+
+.new-revenue-meter {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6dfd1;
+}
+
+.new-revenue-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--gold));
+}
+
+.new-month-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.new-month-metrics div {
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(247, 242, 232, 0.86);
+}
+
+.new-month-metrics strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.new-month-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.28;
+}
+
 .matrix {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(330px, 0.56fr);
@@ -1784,6 +1893,10 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 
+  .new-evolution-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .june-summary {
     grid-template-columns: 1fr;
   }
@@ -1860,6 +1973,8 @@ tr:hover td {
   .life-grid,
   .executive-grid,
   .top-action-grid,
+  .new-evolution-summary,
+  .new-evolution-grid,
   .june-pills {
     grid-template-columns: 1fr;
   }
@@ -1979,6 +2094,16 @@ tr:hover td {
             </div>
             <div id="yearComparisonWidget"></div>
           </section>
+        </section>
+
+        <section class="panel new-evolution-panel">
+          <div class="panel-head">
+            <div>
+              <h3>Evolución de nuevos 2026</h3>
+              <p>Facturación, nuevos, ticket y probabilidad de continuidad mes a mes</p>
+            </div>
+          </div>
+          <div id="newCustomersEvolution"></div>
         </section>
 
         <section class="kpi-grid" id="kpiGrid"></section>
@@ -279281,6 +279406,7 @@ const els = {
   goalForecast: document.querySelector("#goalForecast"),
   executiveSummary: document.querySelector("#executiveSummary"),
   yearComparison: document.querySelector("#yearComparisonWidget"),
+  newCustomersEvolution: document.querySelector("#newCustomersEvolution"),
   kpis: document.querySelector("#kpiGrid"),
   weeklyChart: document.querySelector("#weeklyChart"),
   weeklyTotal: document.querySelector("#weeklyTotal"),
@@ -279459,6 +279585,7 @@ function render() {
   renderJuneSummary();
   renderExecutiveSummary();
   renderYearComparisonWidget();
+  renderNewCustomersEvolution();
   renderKpis();
   renderWeeklyChart();
   renderMonthlyComparison();
@@ -279660,6 +279787,41 @@ function renderYearComparisonWidget() {
       <div><span>Compras</span><strong>${numberFmt.format(currentRows.length)}</strong><small>vs ${numberFmt.format(lastYearRows.length)}</small></div>
       <div><span>Clientes</span><strong>${numberFmt.format(currentCustomers)}</strong><small>vs ${numberFmt.format(lastYearCustomers)}</small></div>
       <div><span>Ticket</span><strong>${currency.format(currentTicket)}</strong><small>vs ${currency.format(pastTicket)}</small></div>
+    </div>
+  `;
+}
+
+function renderNewCustomersEvolution() {
+  if (!els.newCustomersEvolution) return;
+  const rows = newCustomerEvolution2026();
+  const maxRevenue = Math.max(1, ...rows.map((r) => r.revenue));
+  const totalRevenue = sum(rows, (r) => r.revenue);
+  const totalNew = sum(rows, (r) => r.customers);
+  const avgTicket = totalNew ? totalRevenue / totalNew : 0;
+  const weightedContinuity = totalNew ? sum(rows, (r) => r.continuityRate * r.customers) / totalNew : 0;
+  els.newCustomersEvolution.innerHTML = `
+    <div class="new-evolution-summary">
+      <div><span>Facturación nuevos</span><strong>${currency.format(totalRevenue)}</strong></div>
+      <div><span>Nuevos 2026</span><strong>${numberFmt.format(totalNew)}</strong></div>
+      <div><span>Ticket nuevos</span><strong>${currency.format(avgTicket)}</strong></div>
+      <div><span>Continuidad ponderada</span><strong>${pctFmt.format(weightedContinuity)}%</strong></div>
+    </div>
+    <div class="new-evolution-grid">
+      ${rows.map((row) => `
+        <article class="new-month-card ${row.isProjection ? "projection" : ""}">
+          <div class="new-month-head">
+            <span>${readableMonth(row.month)}</span>
+            <strong>${currency.format(row.revenue)}</strong>
+          </div>
+          <div class="new-revenue-meter"><i style="width:${(row.revenue / maxRevenue) * 100}%"></i></div>
+          <div class="new-month-metrics">
+            <div><span>Nuevos</span><strong>${numberFmt.format(row.customers)}</strong></div>
+            <div><span>Ticket</span><strong>${currency.format(row.ticket)}</strong></div>
+            <div><span>${row.isProjection ? "Prob." : "Cont."}</span><strong>${pctFmt.format(row.continuityRate)}%</strong></div>
+          </div>
+          <p>${numberFmt.format(row.continued)} de ${numberFmt.format(row.customers)} ${row.isProjection ? "con señales de continuidad" : "continuaron al mes siguiente"}</p>
+        </article>
+      `).join("")}
     </div>
   `;
 }
@@ -281151,6 +281313,40 @@ function firstPurchaseRowsInRange() {
   const from = new Date(`${els.from.value}T00:00:00`);
   const to = new Date(`${els.to.value}T23:59:59`);
   return firstPurchaseRows().filter((r) => r.date >= from && r.date <= to);
+}
+
+function newCustomerEvolution2026() {
+  const months = [];
+  const cursor = new Date(2026, 0, 1);
+  const end = new Date(reportDate.getFullYear(), reportDate.getMonth(), 1);
+  while (cursor <= end) {
+    months.push(monthKey(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return months.map((month) => {
+    const firstRows = firstPurchaseRows().filter((r) => r.month === month);
+    const nextMonth = addMonths(month, 1);
+    const [nextYear, nextMonthNum] = nextMonth.split("-").map(Number);
+    const nextStart = new Date(nextYear, nextMonthNum - 1, 1);
+    const nextEnd = new Date(nextYear, nextMonthNum, 0, 23, 59, 59, 999);
+    const continuedRows = firstRows.filter((first) => {
+      const history = state.rows.filter((r) => r.isPaid && !r.isSummaryAdjustment && r.customerId === first.customerId);
+      const boughtNext = history.some((r) => r.date > first.date && r.month === nextMonth);
+      const activeIntoNext = history.some((r) => r.date <= nextEnd && r.expiresDate && r.expiresDate >= nextStart);
+      return boughtNext || activeIntoNext;
+    });
+    const revenue = sum(firstRows, (r) => r.price);
+    const customers = firstRows.length;
+    return {
+      month,
+      customers,
+      revenue,
+      ticket: customers ? revenue / customers : 0,
+      continued: continuedRows.length,
+      continuityRate: customers ? (continuedRows.length / customers) * 100 : 0,
+      isProjection: nextStart > reportDate,
+    };
+  });
 }
 
 function cohortLtv(month) {
