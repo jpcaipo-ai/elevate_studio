@@ -1178,6 +1178,7 @@ h2 {
 }
 
 .ops-card {
+  position: relative;
   min-height: 190px;
   border-color: rgba(19, 128, 126, 0.16);
   background:
@@ -3098,6 +3099,18 @@ function bindEvents() {
       openDrilldown(card.dataset.drill);
     }
   });
+  els.consultingViewContent.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-drill]");
+    if (card) openDrilldown(card.dataset.drill);
+  });
+  els.consultingViewContent.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = event.target.closest("[data-drill]");
+    if (card) {
+      event.preventDefault();
+      openDrilldown(card.dataset.drill);
+    }
+  });
   els.drawerClose.addEventListener("click", closeDrawer);
   els.drawerBackdrop.addEventListener("click", closeDrawer);
   els.drawerExport.addEventListener("click", exportDrawerCsv);
@@ -3381,13 +3394,15 @@ function renderConsultingView() {
         <p>${numberFmt.format(consumption.onTrackCustomers)} clientes al ritmo esperado · ${numberFmt.format(consumption.underUsingCustomers)} bajo consumo · ${numberFmt.format(consumption.unusedClasses)} clases activas sin consumir.</p>
         <div class="ops-meter"><i style="width:${Math.min(100, consumption.avgConsumedRate)}%"></i></div>
       </article>
-      <article class="panel ops-card danger">
+      <article class="panel ops-card danger drill-card" data-drill="lostSalesTotal" tabindex="0" role="button">
+        <span class="drill-hint">Ver y exportar</span>
         <span class="story-kicker">Venta perdida total</span>
         <h3>${currency.format(lostSales.total.avgMonthlyValue)} / cliente</h3>
         <p>${numberFmt.format(lostSales.total.customers)} clientes vencidos +30D abiertos. Valor mensual total: ${currency.format(lostSales.total.monthlyValue)}.</p>
         <div class="ops-meter"><i style="width:${Math.min(100, lostSales.total.customers * 4)}%"></i></div>
       </article>
-      <article class="panel ops-card danger">
+      <article class="panel ops-card danger drill-card" data-drill="lostSalesAdjusted" tabindex="0" role="button">
+        <span class="drill-hint">Ver y exportar</span>
         <span class="story-kicker">Venta perdida ajustada</span>
         <h3>${currency.format(lostSales.adjusted.avgMonthlyValue)} / cliente</h3>
         <p>${numberFmt.format(lostSales.adjusted.customers)} clientes vencidos +30D con al menos una recompra. Valor mensual total: ${currency.format(lostSales.adjusted.monthlyValue)}.</p>
@@ -4368,6 +4383,8 @@ function drilldownConfig(type) {
     membership: ["Clientes con membresia activa", "Clientes con pases active o pending."],
     oneDay: ["Clientes 1D / 1 clase", "Compras de 1 clase y clientes que se quedaron solo ahi."],
     riskValue: ["Clientes en riesgo por valor", "Vencidos recientes o por vencer, ordenados por valor mensual y LTV."],
+    lostSalesTotal: ["Vencidos +30D sin renovar", "Clientes vencidos hace mas de 30 dias sin compra posterior registrada."],
+    lostSalesAdjusted: ["Vencidos +30D con recompra previa", "Clientes vencidos hace mas de 30 dias que ya habian recomprado antes."],
     oneClassNotConverted: ["1 clase sin conversion", "Clientes cuya primera compra fue 1 clase y no pasaron a paquete."],
     lowConsumption: ["Activos sin ritmo de asistencia", "Clientes activos con baja asistencia desde su compra."],
   };
@@ -4414,6 +4431,10 @@ function drilldownRows(type) {
     rows = annotated.filter((r) => isOneDayPass(r.pass));
   } else if (type === "riskValue") {
     return riskCustomerRows();
+  } else if (type === "lostSalesTotal") {
+    return lostSalesRows(false);
+  } else if (type === "lostSalesAdjusted") {
+    return lostSalesRows(true);
   } else if (type === "oneClassNotConverted") {
     const ids = new Set(oneClassConversionMetrics().notConvertedIds);
     return Array.from(ids).map((id) => customerDrawerModel(id, { tag: "No convertido", purchases: 1, revenue: 0, packageName: "1 clase" }));
@@ -4762,6 +4783,25 @@ function riskCustomerRows() {
   const upcoming = upcomingRenewals(30).map((r) => ({ ...r, tag: `${daysBetween(reportDate, r.expiresDate)}D por vencer`, scoreDate: r.expiresDate }));
   return aggregatePurchaseRows([...overdue, ...upcoming], "risk")
     .map((row) => ({ ...row, monthlyValue: monthlyizedValue(row.raw || state.rows.find((r) => r.customerId === row.customerId && r.pass === row.packageName) || {}) }))
+    .sort((a, b) => b.monthlyValue - a.monthlyValue || b.ltv - a.ltv);
+}
+
+function lostSalesRows(adjustedOnly) {
+  const metrics = lostSalesMetrics();
+  const rows = adjustedOnly ? metrics.adjustedRows : metrics.rows;
+  return aggregatePurchaseRows(rows, adjustedOnly ? "lostSalesAdjusted" : "lostSalesTotal")
+    .map((row) => {
+      const raw = row.raw || {};
+      const overdueDays = raw.expiresDate ? daysBetween(raw.expiresDate, reportDate) : 0;
+      const monthlyValue = monthlyizedValue(raw);
+      return {
+        ...row,
+        tag: `${numberFmt.format(overdueDays)}D vencido`,
+        date: raw.expiresDate || row.date,
+        monthlyValue,
+        revenue: monthlyValue,
+      };
+    })
     .sort((a, b) => b.monthlyValue - a.monthlyValue || b.ltv - a.ltv);
 }
 
